@@ -1,0 +1,62 @@
+"""Auth dependencies.
+
+Protected endpoints depend on ``get_current_user`` which validates the Supabase
+JWT (HS256, signed with the project's JWT secret) and returns the user identity.
+In development, if no JWT secret is configured the dependency falls back to a
+``dev`` user so the stack is runnable end-to-end without Supabase.
+"""
+from __future__ import annotations
+
+import logging
+
+import jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from app.config import Settings, get_settings
+
+logger = logging.getLogger("learngraph")
+_bearer = HTTPBearer(auto_error=False)
+
+
+class CurrentUser:
+    def __init__(self, user_id: str, email: str | None = None):
+        self.user_id = user_id
+        self.email = email
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    settings: Settings = Depends(get_settings),
+) -> CurrentUser:
+    # Dev fallback: no JWT secret configured -> allow an anonymous dev user.
+    if not settings.supabase_jwt_secret:
+        if credentials is None:
+            return CurrentUser(user_id="dev-user", email="dev@example.com")
+
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token"
+        )
+
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(
+            token,
+            settings.supabase_jwt_secret,
+            algorithms=["HS256"],
+            audience="authenticated",
+            options={"verify_aud": settings.supabase_jwt_secret is not None},
+        )
+    except jwt.PyJWTError as exc:
+        logger.info("JWT validation failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
+        ) from exc
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing subject"
+        )
+    return CurrentUser(user_id=user_id, email=payload.get("email"))
