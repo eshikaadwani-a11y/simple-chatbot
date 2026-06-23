@@ -4,10 +4,12 @@ Each node takes the current ``AgentState`` and returns a partial state update.
 """
 from __future__ import annotations
 
+import json
 import logging
 import re
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langgraph.types import interrupt
 
 from app.agents.models import get_chat_model
 from app.agents.prompts import (
@@ -22,6 +24,9 @@ from app.tools import TOOLS_BY_AGENT
 logger = logging.getLogger("learngraph")
 
 _VALID_ROUTES: set[str] = {"tutor", "quiz", "roadmap", "resume", "interview", "general"}
+
+# Routes whose results are persisted and therefore gated behind human approval.
+HIGH_IMPACT_ROUTES: set[str] = {"roadmap", "resume"}
 
 
 def load_memory(state: AgentState) -> dict:
@@ -78,10 +83,52 @@ def make_specialist_node(route: Route):
     return specialist
 
 
+def human_approval(state: AgentState) -> dict:
+    """Human-in-the-loop checkpoint for high-impact actions.
+
+    Calls LangGraph's ``interrupt()``, which pauses the run and persists state
+    via the checkpointer. The API surfaces the payload to the user; once they
+    decide, the run is resumed with ``Command(resume={"approved": bool})`` and
+    execution continues from exactly here (workflow recovery).
+    """
+    route = state.get("route")
+    decision = interrupt(
+        {
+            "action": f"persist_{route}_result",
+            "route": route,
+            "message": f"Approve saving this {route} result to your learner profile?",
+        }
+    )
+    if isinstance(decision, dict):
+        approved = bool(decision.get("approved"))
+    else:
+        approved = bool(decision)
+    logger.info("Human approval for %s: %s", route, approved)
+    return {"approved": approved}
+
+
+def _persist_route_result(user_id: str, state: AgentState) -> None:
+    """Persist an approved high-impact result (e.g. a generated roadmap)."""
+    if state.get("route") != "roadmap" or not state.get("approved"):
+        return
+    for msg in reversed(state["messages"]):
+        if isinstance(msg, ToolMessage) and getattr(msg, "name", None) == "roadmap_generator":
+            try:
+                plan = json.loads(msg.content)
+                long_term.save_roadmap(user_id, plan.get("goal", ""), plan)
+                long_term.award_xp(user_id, 30)
+            except (json.JSONDecodeError, TypeError) as exc:
+                logger.warning("Could not persist roadmap: %s", exc)
+            return
+
+
 def memory_update(state: AgentState) -> dict:
     """Persist durable facts gleaned from this turn (best-effort)."""
     user_id = state.get("user_id", "anonymous")
     try:
+        # Persist approved high-impact results first.
+        _persist_route_result(user_id, state)
+
         # Award a small amount of XP for engagement; specific tools award more.
         long_term.award_xp(user_id, 5)
 

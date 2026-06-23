@@ -53,8 +53,11 @@ async def stream_response(
     try:
         async for event in graph.astream_events(inputs, config=config, version="v2"):
             kind = event.get("event")
+            node = (event.get("metadata") or {}).get("langgraph_node", "")
 
-            if kind == "on_chat_model_stream":
+            if kind == "on_chat_model_stream" and node.startswith("agent_"):
+                # Only stream tokens from specialist agents — never the planner
+                # or supervisor (whose output is internal routing, not the answer).
                 chunk = event["data"].get("chunk")
                 text = getattr(chunk, "content", None)
                 if text:
@@ -63,24 +66,32 @@ async def stream_response(
             elif kind == "on_tool_start":
                 yield {"type": "tool", "name": event.get("name", "tool")}
 
-            elif kind == "on_chain_end" and not seen_route:
-                # Surface the supervisor's routing decision once available.
+            elif kind == "on_chain_end" and not seen_route and node == "supervisor":
                 out = event.get("data", {}).get("output") or {}
                 if isinstance(out, dict) and out.get("route"):
                     seen_route = True
                     yield {"type": "route", "route": out["route"]}
 
         # Detect a human-in-the-loop interrupt left in the persisted state.
-        snapshot = graph.get_state(config)
-        if getattr(snapshot, "next", None):
-            pending = snapshot.values.get("pending_action")
-            if pending:
-                yield {"type": "interrupt", "payload": pending}
+        for payload in _pending_interrupts(graph, config):
+            yield {"type": "interrupt", "payload": payload}
     except Exception as exc:  # noqa: BLE001
         logger.exception("stream_response failed")
         yield {"type": "error", "content": str(exc)}
 
     yield {"type": "done"}
+
+
+def _pending_interrupts(graph, config: dict[str, Any]) -> list[Any]:
+    """Return the payloads of any interrupts the run is currently paused on."""
+    snapshot = graph.get_state(config)
+    if not getattr(snapshot, "next", None):
+        return []
+    payloads: list[Any] = []
+    for task in getattr(snapshot, "tasks", []) or []:
+        for itr in getattr(task, "interrupts", []) or []:
+            payloads.append(getattr(itr, "value", itr))
+    return payloads
 
 
 async def resume_after_approval(
@@ -95,11 +106,13 @@ async def resume_after_approval(
         async for event in graph.astream_events(
             Command(resume={"approved": approved}), config=config, version="v2"
         ):
-            if event.get("event") == "on_chat_model_stream":
+            node = (event.get("metadata") or {}).get("langgraph_node", "")
+            if event.get("event") == "on_chat_model_stream" and node.startswith("agent_"):
                 chunk = event["data"].get("chunk")
                 text = getattr(chunk, "content", None)
                 if text:
                     yield {"type": "token", "content": text}
+        yield {"type": "resumed", "approved": approved}
     except Exception as exc:  # noqa: BLE001
         logger.exception("resume_after_approval failed")
         yield {"type": "error", "content": str(exc)}

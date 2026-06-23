@@ -69,9 +69,15 @@ File: `backend/app/agents/graph.py`
 - **respond** — emits the final assistant message (streamed).
 
 ### Human-in-the-loop
-High-impact actions (e.g. overwriting a roadmap, submitting a resume rewrite) call
-LangGraph's `interrupt()`. The graph pauses, the API surfaces an approval request,
-and execution resumes from the checkpoint once the user approves.
+High-impact routes (currently **roadmap** and **resume**) pause for approval
+before their result is persisted. After the specialist produces its answer, the
+graph routes to a ``human_approval`` node that calls LangGraph's ``interrupt()``.
+The run pauses (state saved by the checkpointer), the streaming API surfaces an
+``interrupt`` event with the approval payload, and the client shows Approve/Reject.
+On the user's decision the run resumes via ``/chat/resume`` with
+``Command(resume={"approved": bool})`` and continues from exactly where it paused
+(workflow recovery). The set of gated routes is ``HIGH_IMPACT_ROUTES`` in
+``app/agents/nodes.py``.
 
 ## 3. Model selection (swap any LLM via config)
 

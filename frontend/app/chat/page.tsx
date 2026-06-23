@@ -3,11 +3,16 @@
 import { useMemo, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { NavBar } from "@/components/NavBar";
-import { streamChat, type AgentEvent } from "@/lib/api";
+import { resumeChat, streamChat, type AgentEvent } from "@/lib/api";
 
 interface Message {
   role: "user" | "assistant";
   content: string;
+}
+
+interface Approval {
+  message: string;
+  route?: string;
 }
 
 const ROUTE_LABEL: Record<string, string> = {
@@ -30,12 +35,46 @@ function ChatInner() {
   const [busy, setBusy] = useState(false);
   const [activeAgent, setActiveAgent] = useState<string | null>(null);
   const [activeTool, setActiveTool] = useState<string | null>(null);
+  const [approval, setApproval] = useState<Approval | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   function scrollToBottom() {
     requestAnimationFrame(() => {
       scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     });
+  }
+
+  function handleEvent(e: AgentEvent) {
+    if (e.type === "route" && e.route) setActiveAgent(ROUTE_LABEL[e.route] ?? e.route);
+    if (e.type === "tool" && e.name) setActiveTool(e.name);
+    if (e.type === "token" && e.content) {
+      setMessages((m) => {
+        const copy = [...m];
+        copy[copy.length - 1] = {
+          role: "assistant",
+          content: copy[copy.length - 1].content + e.content,
+        };
+        return copy;
+      });
+      scrollToBottom();
+    }
+    if (e.type === "interrupt") {
+      setApproval({
+        message: e.payload?.message ?? "Approve this action?",
+        route: e.payload?.route,
+      });
+    }
+    if (e.type === "error") {
+      setMessages((m) => {
+        const copy = [...m];
+        copy[copy.length - 1] = { role: "assistant", content: `⚠️ ${e.content}` };
+        return copy;
+      });
+    }
+    if (e.type === "done") {
+      setBusy(false);
+      setActiveTool(null);
+    }
   }
 
   async function send() {
@@ -45,36 +84,25 @@ function ChatInner() {
     setBusy(true);
     setActiveAgent(null);
     setActiveTool(null);
+    setApproval(null);
 
     setMessages((m) => [...m, { role: "user", content: text }, { role: "assistant", content: "" }]);
     scrollToBottom();
 
-    await streamChat(threadId, text, (e: AgentEvent) => {
-      if (e.type === "route" && e.route) setActiveAgent(ROUTE_LABEL[e.route] ?? e.route);
-      if (e.type === "tool" && e.name) setActiveTool(e.name);
-      if (e.type === "token" && e.content) {
-        setMessages((m) => {
-          const copy = [...m];
-          copy[copy.length - 1] = {
-            role: "assistant",
-            content: copy[copy.length - 1].content + e.content,
-          };
-          return copy;
-        });
-        scrollToBottom();
-      }
-      if (e.type === "error") {
-        setMessages((m) => {
-          const copy = [...m];
-          copy[copy.length - 1] = { role: "assistant", content: `⚠️ ${e.content}` };
-          return copy;
-        });
-      }
-      if (e.type === "done") {
-        setBusy(false);
-        setActiveTool(null);
-      }
-    });
+    await streamChat(threadId, text, handleEvent);
+  }
+
+  async function respondToApproval(approved: boolean) {
+    setApproval(null);
+    setBusy(true);
+    await resumeChat(threadId, approved, handleEvent);
+    setMessages((m) => [
+      ...m,
+      {
+        role: "assistant",
+        content: approved ? "✅ Saved to your learner profile." : "Okay — not saved.",
+      },
+    ]);
   }
 
   return (
@@ -109,6 +137,16 @@ function ChatInner() {
         </div>
       )}
 
+      {approval && (
+        <div className="mb-2 rounded-xl border border-brand/40 bg-brand/10 p-3 text-sm">
+          <p className="mb-2">🔐 {approval.message}</p>
+          <div className="flex gap-2">
+            <button className="btn-primary" onClick={() => respondToApproval(true)}>Approve</button>
+            <button className="btn-ghost" onClick={() => respondToApproval(false)}>Reject</button>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-2">
         <input
           className="input"
@@ -116,9 +154,9 @@ function ChatInner() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
-          disabled={busy}
+          disabled={busy || approval !== null}
         />
-        <button className="btn-primary" onClick={send} disabled={busy}>
+        <button className="btn-primary" onClick={send} disabled={busy || approval !== null}>
           {busy ? "…" : "Send"}
         </button>
       </div>

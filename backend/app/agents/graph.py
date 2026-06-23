@@ -16,6 +16,8 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 
 from app.agents.nodes import (
+    HIGH_IMPACT_ROUTES,
+    human_approval,
     load_memory,
     make_specialist_node,
     memory_update,
@@ -35,12 +37,18 @@ def _route_from_supervisor(state: AgentState) -> str:
 
 
 def _after_specialist(state: AgentState) -> str:
-    """ReAct decision: if the last AIMessage requested tools, run them; else finish.
+    """ReAct decision for a specialist step.
 
-    Reuses LangGraph's ``tools_condition`` which returns "tools" or END.
+    - If the last AIMessage requested tools -> run them (``tools``).
+    - Else if this is a high-impact route (roadmap/resume) and the result has
+      not yet been approved -> pause for human approval (``human_approval``).
+    - Otherwise -> finish (``memory_update``).
     """
-    decision = tools_condition(state)
-    return "tools" if decision == "tools" else "memory_update"
+    if tools_condition(state) == "tools":
+        return "tools"
+    if state.get("route") in HIGH_IMPACT_ROUTES and state.get("approved") is None:
+        return "human_approval"
+    return "memory_update"
 
 
 def build_graph(checkpointer=None):
@@ -55,6 +63,7 @@ def build_graph(checkpointer=None):
     graph.add_node("load_memory", load_memory)
     graph.add_node("planner", planner)
     graph.add_node("supervisor", supervisor)
+    graph.add_node("human_approval", human_approval)
     graph.add_node("memory_update", memory_update)
     graph.add_node("respond", respond)
 
@@ -78,12 +87,16 @@ def build_graph(checkpointer=None):
         {route: f"agent_{route}" for route in _SPECIALISTS},
     )
 
-    # Each specialist: ReAct loop or finish.
+    # Each specialist: ReAct loop, human approval (high-impact), or finish.
     for route in _SPECIALISTS:
         graph.add_conditional_edges(
             f"agent_{route}",
             _after_specialist,
-            {"tools": "tools", "memory_update": "memory_update"},
+            {
+                "tools": "tools",
+                "human_approval": "human_approval",
+                "memory_update": "memory_update",
+            },
         )
 
     # After tools run, control returns to the active specialist to analyze results.
@@ -94,6 +107,8 @@ def build_graph(checkpointer=None):
         {route: f"agent_{route}" for route in _SPECIALISTS},
     )
 
+    # Human-in-the-loop: once approval is resolved, proceed to persistence.
+    graph.add_edge("human_approval", "memory_update")
     graph.add_edge("memory_update", "respond")
     graph.add_edge("respond", END)
 

@@ -11,38 +11,23 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 export interface AgentEvent {
-  type: "token" | "tool" | "route" | "interrupt" | "error" | "done";
+  type: "token" | "tool" | "route" | "interrupt" | "resumed" | "error" | "done";
   content?: string;
   name?: string;
   route?: string;
-  payload?: unknown;
+  approved?: boolean;
+  payload?: { action?: string; route?: string; message?: string };
 }
 
 /**
- * Stream a chat turn from the agent. Parses the Server-Sent Events response
- * body manually so we can render tokens, tool calls, and routing live.
+ * Internal: stream and parse a Server-Sent Events response body, dispatching
+ * each parsed event to `onEvent`.
  */
-export async function streamChat(
-  threadId: string,
-  message: string,
-  onEvent: (e: AgentEvent) => void,
-): Promise<void> {
-  const headers = {
-    "Content-Type": "application/json",
-    ...(await authHeader()),
-  };
-
-  const res = await fetch(`${API_BASE}/chat/stream`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ thread_id: threadId, message }),
-  });
-
+async function consumeSSE(res: Response, onEvent: (e: AgentEvent) => void): Promise<void> {
   if (!res.ok || !res.body) {
     onEvent({ type: "error", content: `Request failed (${res.status})` });
     return;
   }
-
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
@@ -51,8 +36,6 @@ export async function streamChat(
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
-
-    // SSE frames are separated by a blank line.
     const frames = buffer.split("\n\n");
     buffer = frames.pop() ?? "";
     for (const frame of frames) {
@@ -65,6 +48,37 @@ export async function streamChat(
       }
     }
   }
+}
+
+/**
+ * Stream a chat turn from the agent. Renders tokens, tool calls, routing, and
+ * surfaces human-in-the-loop interrupts live.
+ */
+export async function streamChat(
+  threadId: string,
+  message: string,
+  onEvent: (e: AgentEvent) => void,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/chat/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
+    body: JSON.stringify({ thread_id: threadId, message }),
+  });
+  await consumeSSE(res, onEvent);
+}
+
+/** Resume an interrupted (human-in-the-loop) run after approval/rejection. */
+export async function resumeChat(
+  threadId: string,
+  approved: boolean,
+  onEvent: (e: AgentEvent) => void,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/chat/resume`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(await authHeader()) },
+    body: JSON.stringify({ thread_id: threadId, approved }),
+  });
+  await consumeSSE(res, onEvent);
 }
 
 export interface Analytics {
