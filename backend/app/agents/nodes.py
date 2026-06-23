@@ -30,14 +30,24 @@ HIGH_IMPACT_ROUTES: set[str] = {"roadmap", "resume"}
 
 
 def load_memory(state: AgentState) -> dict:
-    """Hydrate the graph with the learner's long-term memory at run start."""
+    """Hydrate the graph with the learner's long-term memory at run start.
+
+    Also resets per-turn control flags. ``approved`` is a checkpointed channel,
+    so without resetting it here a second roadmap/resume turn in the same thread
+    would see the previous turn's value and skip the approval gate.
+    """
     user_id = state.get("user_id", "anonymous")
     try:
         context = long_term.load_memory_context(user_id)
     except Exception as exc:  # noqa: BLE001
         logger.warning("Failed to load memory for %s: %s", user_id, exc)
         context = {}
-    return {"memory_context": context, "tool_invocations": []}
+    return {
+        "memory_context": context,
+        "tool_invocations": [],
+        "approved": None,
+        "pending_action": None,
+    }
 
 
 def planner(state: AgentState) -> dict:

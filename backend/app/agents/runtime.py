@@ -30,7 +30,10 @@ def get_graph():
 
 
 def _config(user_id: str, thread_id: str) -> dict[str, Any]:
-    return {"configurable": {"thread_id": thread_id, "user_id": user_id}}
+    # Namespace the thread by user id so a user can never read or resume another
+    # user's conversation state, even if they guess/learn the raw thread id.
+    namespaced = f"{user_id}::{thread_id}"
+    return {"configurable": {"thread_id": namespaced, "user_id": user_id}}
 
 
 async def stream_response(
@@ -102,6 +105,14 @@ async def resume_after_approval(
 
     graph = get_graph()
     config = _config(user_id, thread_id)
+
+    # Guard: only resume if the run is actually paused on an interrupt for this
+    # thread. Resuming an un-paused thread would raise / corrupt state.
+    if not _pending_interrupts(graph, config):
+        yield {"type": "error", "content": "No pending approval for this conversation."}
+        yield {"type": "done"}
+        return
+
     try:
         async for event in graph.astream_events(
             Command(resume={"approved": approved}), config=config, version="v2"

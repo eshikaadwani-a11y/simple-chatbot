@@ -29,10 +29,11 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
     settings: Settings = Depends(get_settings),
 ) -> CurrentUser:
-    # Dev fallback: no JWT secret configured -> allow an anonymous dev user.
+    # Dev fallback: with no JWT secret configured we cannot verify tokens, so we
+    # run as an anonymous dev user. We ignore any supplied token rather than
+    # attempting (and failing) to decode it with an empty key.
     if not settings.supabase_jwt_secret:
-        if credentials is None:
-            return CurrentUser(user_id="dev-user", email="dev@example.com")
+        return CurrentUser(user_id="dev-user", email="dev@example.com")
 
     if credentials is None:
         raise HTTPException(
@@ -46,7 +47,6 @@ def get_current_user(
             settings.supabase_jwt_secret,
             algorithms=["HS256"],
             audience="authenticated",
-            options={"verify_aud": settings.supabase_jwt_secret is not None},
         )
     except jwt.PyJWTError as exc:
         logger.info("JWT validation failed: %s", exc)
