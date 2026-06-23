@@ -1,0 +1,43 @@
+# ============================================================
+# Model registry — swap the agent's LLM with a one-line change.
+#
+# `default` selects which entry is used when no model is named.
+# It can be overridden at runtime via the LEARNGRAPH_DEFAULT_MODEL env var.
+#
+# Each entry maps to LangChain's init_chat_model(provider, model, **params).
+# Add Claude / Gemini / DeepSeek / local models here without touching code.
+# ============================================================
+default: gpt-5
+
+models:
+  gpt-5:
+    provider: openai
+    model: gpt-5
+    params:
+      temperature: 0.2
+      max_retries: 3
+
+  gpt-5-mini:
+    provider: openai
+    model: gpt-5-mini
+    params:
+      temperature: 0.3
+
+  claude:
+    provider: anthropic
+    model: claude-sonnet-4-5
+    params:
+      temperature: 0.2
+      max_tokens: 4096
+
+  gemini:
+    provider: google_genai
+    model: gemini-2.5-pro
+    params:
+      temperature: 0.2
+
+  deepseek:
+    provider: deepseek
+    model: deepseek-chat
+    params:
+      temperature: 0.2
