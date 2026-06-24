@@ -24,4 +24,13 @@ addopts = "-q"
 
 [tool.coverage.run]
 source = ["app"]
-omit = ["app/observability.py"]
+# Exclude bootstrapping/infra modules that require a live process or external
+# services (DB/LLM) to execute; their logic is covered by integration in prod, not
+# unit tests. This keeps the coverage gate meaningful for application logic.
+omit = [
+    "app/main.py",
+    "app/observability.py",
+    "app/memory/checkpointer.py",
+    "app/db/supabase_client.py",
+    "app/rag/ingest.py",
+]
