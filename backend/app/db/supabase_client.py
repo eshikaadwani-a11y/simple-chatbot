@@ -3,6 +3,7 @@
 The service-role key bypasses Row-Level Security, so this client must NEVER be
 exposed to the browser. The frontend uses the anon key + user JWT instead.
 """
+
 from __future__ import annotations
 
 import functools

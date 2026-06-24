@@ -10,6 +10,7 @@ Topology (see docs/ARCHITECTURE.md):
 The supervisor uses conditional edges to delegate to specialists, and each
 specialist uses conditional edges to drive the ReAct tool loop.
 """
+
 from __future__ import annotations
 
 from langgraph.graph import END, START, StateGraph

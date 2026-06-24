@@ -1,4 +1,5 @@
 """Progress routes — analytics summary and learning-event recording."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
@@ -18,9 +19,7 @@ async def summary(user: CurrentUser = Depends(get_current_user)) -> AnalyticsRes
 
 
 @router.post("/event")
-async def record_event(
-    body: ProgressEvent, user: CurrentUser = Depends(get_current_user)
-) -> dict:
+async def record_event(body: ProgressEvent, user: CurrentUser = Depends(get_current_user)) -> dict:
     """Record a learning event (topic completion, quiz result, goal, preference)."""
     uid = user.user_id
     if body.type == "topic_completed" and body.topic:

@@ -1,4 +1,5 @@
 """Chat routes — token-by-token streaming + human-in-the-loop resume."""
+
 from __future__ import annotations
 
 import json
@@ -19,9 +20,7 @@ def _sse(event: dict) -> dict:
 
 
 @router.post("/stream")
-async def chat_stream(
-    body: ChatRequest, user: CurrentUser = Depends(get_current_user)
-):
+async def chat_stream(body: ChatRequest, user: CurrentUser = Depends(get_current_user)):
     """Stream the agent's response as Server-Sent Events.
 
     Event types: token, tool, route, interrupt, error, done.
@@ -37,9 +36,7 @@ async def chat_stream(
 
 
 @router.post("/resume")
-async def chat_resume(
-    body: ResumeRequest, user: CurrentUser = Depends(get_current_user)
-):
+async def chat_resume(body: ResumeRequest, user: CurrentUser = Depends(get_current_user)):
     """Resume an interrupted (human-in-the-loop) run after approval/rejection."""
 
     async def event_generator():

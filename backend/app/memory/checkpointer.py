@@ -9,11 +9,12 @@ This gives us:
 We use the Postgres checkpointer when ``DATABASE_URL`` is set, otherwise an
 in-memory saver for local development.
 """
+
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 from app.config import get_settings
 

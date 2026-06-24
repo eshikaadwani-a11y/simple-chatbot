@@ -1,4 +1,5 @@
 """Interview preparation tool — questions, mock interviews, and rubrics."""
+
 from __future__ import annotations
 
 import json

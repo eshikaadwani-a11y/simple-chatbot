@@ -1,4 +1,5 @@
 """Resume review tool — ATS-style analysis and improvement suggestions."""
+
 from __future__ import annotations
 
 import json

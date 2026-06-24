@@ -1,4 +1,5 @@
 """Quiz generator tool — adaptive quizzes with an answer key."""
+
 from __future__ import annotations
 
 import json

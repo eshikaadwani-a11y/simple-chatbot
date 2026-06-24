@@ -4,6 +4,7 @@ All tools are plain LangChain tools, so any agent can be granted any subset.
 ``TOOLS_BY_AGENT`` defines which tools each specialist is allowed to call, and
 ``ALL_TOOLS`` is the union used to build the shared ``ToolNode``.
 """
+
 from __future__ import annotations
 
 from langchain_core.tools import BaseTool

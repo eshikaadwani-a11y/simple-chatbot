@@ -1,4 +1,5 @@
 """Notes generator tool — structured study notes."""
+
 from __future__ import annotations
 
 import json

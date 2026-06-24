@@ -5,10 +5,12 @@ requests. Each conversation maps to a LangGraph ``thread_id`` (short-term memory
 + workflow recovery). This module also exposes a token-streaming generator that
 the FastAPI SSE endpoint consumes.
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from typing import Any
 
 from langchain_core.messages import HumanMessage
 

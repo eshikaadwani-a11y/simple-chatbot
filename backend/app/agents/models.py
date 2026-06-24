@@ -8,6 +8,7 @@ is therefore a one-line config change with zero code edits.
 Under the hood we use LangChain's ``init_chat_model`` which returns a provider-
 agnostic ``BaseChatModel`` supporting ``.bind_tools`` and streaming.
 """
+
 from __future__ import annotations
 
 import functools
@@ -61,9 +62,7 @@ def get_chat_model(name: str | None = None, *, streaming: bool = False) -> BaseC
 
     entry = registry["models"].get(name)
     if entry is None:
-        raise KeyError(
-            f"Unknown model '{name}'. Configured models: {list_models()}"
-        )
+        raise KeyError(f"Unknown model '{name}'. Configured models: {list_models()}")
 
     provider = entry["provider"]
     model = entry["model"]

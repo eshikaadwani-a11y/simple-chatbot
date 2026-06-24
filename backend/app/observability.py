@@ -4,6 +4,7 @@ Calling ``configure_observability()`` at startup sets the environment variables
 LangChain/LangGraph read to emit traces to LangSmith. Tracing is opt-in via
 ``LANGCHAIN_TRACING_V2`` so the app runs fine with no observability configured.
 """
+
 from __future__ import annotations
 
 import logging

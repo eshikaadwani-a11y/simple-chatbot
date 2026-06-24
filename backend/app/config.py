@@ -4,6 +4,7 @@ All runtime configuration is loaded from environment variables (12-factor style)
 via pydantic-settings. A single cached `Settings` instance is exposed through
 `get_settings()`.
 """
+
 from __future__ import annotations
 
 from functools import lru_cache
@@ -13,9 +14,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=".env", env_file_encoding="utf-8", extra="ignore"
-    )
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     # ---- App ----
     app_name: str = "LearnGraph"

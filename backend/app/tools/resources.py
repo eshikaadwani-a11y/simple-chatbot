@@ -1,4 +1,5 @@
 """Resource recommendation tool — books, courses, articles, practice sets."""
+
 from __future__ import annotations
 
 import json

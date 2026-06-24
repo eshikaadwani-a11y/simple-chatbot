@@ -4,6 +4,7 @@ Several tools (roadmap, quiz, notes, resume, interview, dsa) produce structured
 content with the LLM. They share this thin wrapper so prompt/JSON handling is
 consistent and robust to occasional non-JSON output.
 """
+
 from __future__ import annotations
 
 import json
@@ -14,7 +15,9 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from app.agents.models import get_chat_model
 
 
-def generate_json(system_prompt: str, user_prompt: str, *, model: str | None = None) -> dict[str, Any]:
+def generate_json(
+    system_prompt: str, user_prompt: str, *, model: str | None = None
+) -> dict[str, Any]:
     """Invoke the configured LLM and parse a JSON object from the response."""
     llm = get_chat_model(model)
     messages = [

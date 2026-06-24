@@ -4,6 +4,7 @@
 reducer so each node can append without clobbering history (enabling the
 ReAct tool loop and multi-turn memory).
 """
+
 from __future__ import annotations
 
 from typing import Annotated, Any, Literal, TypedDict

@@ -5,6 +5,7 @@ JWT (HS256, signed with the project's JWT secret) and returns the user identity.
 In development, if no JWT secret is configured the dependency falls back to a
 ``dev`` user so the stack is runnable end-to-end without Supabase.
 """
+
 from __future__ import annotations
 
 import logging
@@ -36,9 +37,7 @@ def get_current_user(
         return CurrentUser(user_id="dev-user", email="dev@example.com")
 
     if credentials is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
 
     token = credentials.credentials
     try:

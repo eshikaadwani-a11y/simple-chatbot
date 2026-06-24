@@ -1,4 +1,5 @@
 """Auth routes — verify the Supabase JWT and return the user."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends

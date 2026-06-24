@@ -1,4 +1,5 @@
 """FastAPI application entrypoint for the LearnGraph backend."""
+
 from __future__ import annotations
 
 import logging

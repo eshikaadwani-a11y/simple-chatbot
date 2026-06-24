@@ -9,6 +9,7 @@ Stores and retrieves:
 If Supabase is not configured, an in-memory fallback keeps the app runnable for
 local development and tests.
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -26,7 +27,7 @@ _MEM: dict[str, dict[str, Any]] = defaultdict(
 
 
 def _today() -> dt.date:
-    return dt.datetime.now(dt.timezone.utc).date()
+    return dt.datetime.now(dt.UTC).date()
 
 
 # ----------------------------------------------------------------------------
@@ -121,7 +122,7 @@ def complete_topic(user_id: str, topic: str, mastery: float = 1.0) -> None:
         "user_id": user_id,
         "topic": topic,
         "mastery": mastery,
-        "completed_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "completed_at": dt.datetime.now(dt.UTC).isoformat(),
     }
     if sb is None:
         _MEM[user_id]["topics"].append(row)
@@ -151,7 +152,7 @@ def record_quiz_result(
         "score": score,
         "total": total,
         "weak_concepts": weak_concepts or [],
-        "taken_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "taken_at": dt.datetime.now(dt.UTC).isoformat(),
     }
     if sb is None:
         _MEM[user_id]["quizzes"].append(row)
@@ -178,7 +179,7 @@ def save_roadmap(user_id: str, goal: str, plan: dict[str, Any]) -> None:
         "goal": goal,
         "plan": plan,
         "progress": 0,
-        "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+        "created_at": dt.datetime.now(dt.UTC).isoformat(),
     }
     if sb is None:
         _MEM[user_id]["roadmaps"].append(row)

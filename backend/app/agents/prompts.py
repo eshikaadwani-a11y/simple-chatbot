@@ -1,4 +1,5 @@
 """System prompts for the planner, supervisor, and specialist agents."""
+
 from __future__ import annotations
 
 PLANNER_PROMPT = """You are the Planner for a multi-agent learning assistant.

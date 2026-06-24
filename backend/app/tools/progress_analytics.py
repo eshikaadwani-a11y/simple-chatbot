@@ -4,6 +4,7 @@
 the LLM never sees or chooses it; the agent can only analyze the authenticated
 user's own data. ``ToolNode`` fills the injected argument automatically.
 """
+
 from __future__ import annotations
 
 import json

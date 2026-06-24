@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { NavBar } from "@/components/NavBar";
 import { resumeChat, streamChat, type AgentEvent } from "@/lib/api";
+import { routeLabel } from "@/lib/format";
 
 interface Message {
   role: "user" | "assistant";
@@ -14,15 +15,6 @@ interface Approval {
   message: string;
   route?: string;
 }
-
-const ROUTE_LABEL: Record<string, string> = {
-  tutor: "Tutor Agent",
-  quiz: "Quiz Agent",
-  roadmap: "Roadmap Agent",
-  resume: "Resume Agent",
-  interview: "Interview Agent",
-  general: "Learning Assistant",
-};
 
 function ChatInner() {
   // One LangGraph thread per browser session => short-term memory + recovery.
@@ -45,7 +37,7 @@ function ChatInner() {
   }
 
   function handleEvent(e: AgentEvent) {
-    if (e.type === "route" && e.route) setActiveAgent(ROUTE_LABEL[e.route] ?? e.route);
+    if (e.type === "route" && e.route) setActiveAgent(routeLabel(e.route));
     if (e.type === "tool" && e.name) setActiveTool(e.name);
     if (e.type === "token" && e.content) {
       setMessages((m) => {

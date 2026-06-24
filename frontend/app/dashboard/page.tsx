@@ -13,6 +13,7 @@ import {
 import { RequireAuth } from "@/components/RequireAuth";
 import { NavBar } from "@/components/NavBar";
 import { getAnalytics, type Analytics } from "@/lib/api";
+import { formatPercent } from "@/lib/format";
 
 function Stat({ label, value, accent }: { label: string; value: string | number; accent?: boolean }) {
   return (
@@ -51,7 +52,7 @@ function DashboardInner() {
         <Stat label="Topics Completed" value={data?.topics_completed ?? "—"} />
         <Stat
           label="Avg Quiz Score"
-          value={data?.average_quiz_score != null ? `${Math.round(data.average_quiz_score * 100)}%` : "—"}
+          value={formatPercent(data?.average_quiz_score)}
         />
       </div>
 

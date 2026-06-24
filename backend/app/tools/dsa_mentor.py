@@ -1,4 +1,5 @@
 """DSA mentor tool — explanations, hints (not full solutions), practice plans."""
+
 from __future__ import annotations
 
 import json
