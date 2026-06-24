@@ -59,3 +59,24 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing subject"
         )
     return CurrentUser(user_id=user_id, email=payload.get("email"))
+
+
+def require_admin(
+    user: CurrentUser = Depends(get_current_user),
+    settings: Settings = Depends(get_settings),
+) -> CurrentUser:
+    """Allow only configured admin emails.
+
+    If ``ADMIN_EMAILS`` is unset, admin access is permitted only outside
+    production (developer convenience); production requires an explicit allow-list.
+    """
+    admins = settings.admin_email_set
+    if not admins:
+        if settings.environment.lower() in ("production", "prod"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Admin not configured"
+            )
+        return user
+    if (user.email or "").lower() not in admins:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+    return user

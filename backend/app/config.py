@@ -51,6 +51,13 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 60
     rate_limit_heavy_per_minute: int = 20
 
+    # ---- Admin (comma-separated emails allowed to view analytics) ----
+    admin_emails: str = ""
+
+    @property
+    def admin_email_set(self) -> set[str]:
+        return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

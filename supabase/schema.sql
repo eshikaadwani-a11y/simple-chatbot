@@ -117,3 +117,30 @@ drop trigger if exists trg_touch_profile on public.learner_profiles;
 create trigger trg_touch_profile
     before update on public.learner_profiles
     for each row execute function public.touch_updated_at();
+
+
+-- ============================================================
+-- usage_events — analytics, cost tracking, token accounting
+-- Written by the backend (service role). RLS is enabled with no public policy,
+-- so anon/auth clients cannot read it; only the service role (admin API) can.
+-- ============================================================
+create table if not exists public.usage_events (
+    id                bigint generated always as identity primary key,
+    user_id           uuid references auth.users (id) on delete set null,
+    event_type        text not null,           -- chat | tool | resume_analysis
+    agent             text,                     -- supervisor route
+    tool              text,
+    model             text,
+    prompt_tokens     integer     not null default 0,
+    completion_tokens integer     not null default 0,
+    total_tokens      integer     not null default 0,
+    cost_usd          numeric(12, 6) not null default 0,
+    created_at        timestamptz not null default now()
+);
+
+create index if not exists idx_usage_events_created on public.usage_events (created_at desc);
+create index if not exists idx_usage_events_type    on public.usage_events (event_type);
+create index if not exists idx_usage_events_agent   on public.usage_events (agent);
+
+alter table public.usage_events enable row level security;
+-- No SELECT/INSERT policies => only the service-role key (backend) may access it.

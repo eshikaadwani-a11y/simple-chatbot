@@ -84,6 +84,30 @@ export async function recordEvent(event: Record<string, unknown>): Promise<void>
   });
 }
 
+export interface AdminAnalytics {
+  total_users: number;
+  active_users_7d: number;
+  ai_requests: number;
+  tool_calls: number;
+  resume_analyses: number;
+  roadmaps_generated: number;
+  quiz_attempts: number;
+  top_agents: [string, number][];
+  top_tools: [string, number][];
+  tokens_total: number;
+  cost_total_usd: number;
+  cost_today_usd: number;
+  cost_month_usd: number;
+  daily_cost: { date: string; cost: number }[];
+}
+
+export async function getAdminAnalytics(): Promise<AdminAnalytics> {
+  const res = await fetch(`${API_BASE}/admin/analytics`, { headers: await authHeader() });
+  if (res.status === 403) throw new Error("Admin access required.");
+  if (!res.ok) throw new Error(`Admin analytics failed (${res.status})`);
+  return res.json();
+}
+
 /** Upload a PDF resume for ATS analysis by the Resume agent. */
 export async function analyzeResume(file: File, targetRole: string): Promise<ResumeAnalysis> {
   const form = new FormData();

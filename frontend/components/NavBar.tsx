@@ -8,6 +8,12 @@ export function NavBar() {
   const { user, signOut } = useAuth();
   const router = useRouter();
 
+  const adminEmails = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdmin = !!user?.email && adminEmails.includes(user.email.toLowerCase());
+
   return (
     <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
       <Link href="/dashboard" className="text-lg font-bold">🧠 LearnGraph</Link>
@@ -15,6 +21,7 @@ export function NavBar() {
         <Link href="/dashboard" className="hover:text-brand-light">Dashboard</Link>
         <Link href="/chat" className="hover:text-brand-light">AI Mentor</Link>
         <Link href="/resume" className="hover:text-brand-light">Resume</Link>
+        {isAdmin && <Link href="/admin" className="hover:text-brand-light">Admin</Link>}
         <span className="hidden text-gray-500 sm:inline">{user?.email}</span>
         <button
           className="btn-ghost"

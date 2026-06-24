@@ -73,6 +73,16 @@ async def analyze_resume(
 
     await run_in_threadpool(long_term.award_xp, user.user_id, 15)
 
+    # Usage analytics (best-effort).
+    try:
+        from app.analytics import record_usage
+
+        await run_in_threadpool(
+            lambda: record_usage(user_id=user.user_id, event_type="resume_analysis")
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
     return {
         "target_role": role,
         "characters_extracted": len(text),

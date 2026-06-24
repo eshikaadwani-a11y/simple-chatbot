@@ -8,6 +8,7 @@ the FastAPI SSE endpoint consumes.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from typing import Any
@@ -15,6 +16,7 @@ from typing import Any
 from langchain_core.messages import HumanMessage
 
 from app.agents.graph import build_graph
+from app.analytics import TokenUsageCallback, record_run_usage
 from app.memory.checkpointer import create_checkpointer
 
 logger = logging.getLogger("learngraph")
@@ -53,11 +55,21 @@ def get_graph():
     return _GRAPH
 
 
-def _config(user_id: str, thread_id: str) -> dict[str, Any]:
+def _config(user_id: str, thread_id: str, callbacks: list | None = None) -> dict[str, Any]:
     # Namespace the thread by user id so a user can never read or resume another
     # user's conversation state, even if they guess/learn the raw thread id.
     namespaced = f"{user_id}::{thread_id}"
-    return {"configurable": {"thread_id": namespaced, "user_id": user_id}}
+    config: dict[str, Any] = {
+        "configurable": {"thread_id": namespaced, "user_id": user_id},
+        # LangSmith trace enrichment: a stable run name, tags, and metadata make
+        # traces filterable by user/thread in the LangSmith UI.
+        "run_name": "learngraph-agent",
+        "tags": ["learngraph", f"user:{user_id}"],
+        "metadata": {"user_id": user_id, "thread_id": thread_id},
+    }
+    if callbacks:
+        config["callbacks"] = callbacks
+    return config
 
 
 async def stream_response(
@@ -74,7 +86,8 @@ async def stream_response(
     """
     graph = get_graph()
     inputs = {"messages": [HumanMessage(content=message)], "user_id": user_id}
-    config = _config(user_id, thread_id)
+    usage_cb = TokenUsageCallback()
+    config = _config(user_id, thread_id, callbacks=[usage_cb])
 
     seen_route = False
     try:
@@ -99,14 +112,34 @@ async def stream_response(
                     seen_route = True
                     yield {"type": "route", "route": out["route"]}
 
-        # Detect a human-in-the-loop interrupt left in the persisted state.
-        for payload in await _pending_interrupts(graph, config):
+        # Single state read: surface interrupts AND capture the route for analytics.
+        snapshot = await graph.aget_state(config)
+        route = (getattr(snapshot, "values", {}) or {}).get("route")
+
+        # Record usage/cost (best-effort, off the event loop).
+        try:
+            await asyncio.to_thread(record_run_usage, user_id, route, usage_cb)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("usage recording failed: %s", exc)
+
+        for payload in _interrupts_from(snapshot):
             yield {"type": "interrupt", "payload": payload}
     except Exception as exc:  # noqa: BLE001
         logger.exception("stream_response failed")
         yield {"type": "error", "content": str(exc)}
 
     yield {"type": "done"}
+
+
+def _interrupts_from(snapshot) -> list[Any]:
+    """Extract interrupt payloads from a graph state snapshot."""
+    if not getattr(snapshot, "next", None):
+        return []
+    payloads: list[Any] = []
+    for task in getattr(snapshot, "tasks", []) or []:
+        for itr in getattr(task, "interrupts", []) or []:
+            payloads.append(getattr(itr, "value", itr))
+    return payloads
 
 
 async def _pending_interrupts(graph, config: dict[str, Any]) -> list[Any]:
@@ -116,13 +149,7 @@ async def _pending_interrupts(graph, config: dict[str, Any]) -> list[Any]:
     async checkpointer in production.
     """
     snapshot = await graph.aget_state(config)
-    if not getattr(snapshot, "next", None):
-        return []
-    payloads: list[Any] = []
-    for task in getattr(snapshot, "tasks", []) or []:
-        for itr in getattr(task, "interrupts", []) or []:
-            payloads.append(getattr(itr, "value", itr))
-    return payloads
+    return _interrupts_from(snapshot)
 
 
 async def resume_after_approval(

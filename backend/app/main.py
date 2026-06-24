@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.agents.models import default_model_name, list_models
-from app.api import routes_auth, routes_chat, routes_progress, routes_resume
+from app.api import routes_admin, routes_auth, routes_chat, routes_progress, routes_resume
 from app.config import get_settings
 from app.observability import configure_observability
 from app.security import (
@@ -83,6 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(routes_chat.router)
     app.include_router(routes_progress.router)
     app.include_router(routes_resume.router)
+    app.include_router(routes_admin.router)
 
     @app.get("/health", tags=["meta"])
     async def health() -> dict:
