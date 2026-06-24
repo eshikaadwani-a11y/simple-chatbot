@@ -56,6 +56,20 @@ flowchart TD
 
 Full design write-up: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
+![Architecture diagram](docs/assets/architecture.svg)
+
+---
+
+## 📚 Documentation
+
+| Doc | What's inside |
+|---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System design, graph, memory, API, deployment |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | ADRs: why GPT-5 / LangGraph / FastAPI / Supabase / Railway / Vercel |
+| [`docs/SCALING.md`](docs/SCALING.md) | Current vs. future architecture; Redis, Celery, Kafka, K8s, vector DBs |
+| [`docs/INTERVIEW_GUIDE.md`](docs/INTERVIEW_GUIDE.md) | Talking track + resume bullets (short/medium/advanced) |
+| [`docs/INTERVIEW_QUESTIONS.md`](docs/INTERVIEW_QUESTIONS.md) | 50 Q&A across LangGraph, FastAPI, agents, system design, DBs, security, deploy, CI/CD |
+
 ---
 
 ## 🤖 The agents & tools

@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="700" viewBox="0 0 1040 700" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#a78bfa"/>
+    </marker>
+    <style>
+      .title { font-size: 22px; font-weight: 700; fill: #1f2937; }
+      .lane  { font-size: 13px; font-weight: 700; fill: #6d28d9; letter-spacing: 1px; }
+      .box   { fill: #ffffff; stroke: #c4b5fd; stroke-width: 1.5; rx: 10; }
+      .accent{ fill: #f5f3ff; stroke: #a78bfa; stroke-width: 1.5; rx: 10; }
+      .data  { fill: #ecfeff; stroke: #67e8f9; stroke-width: 1.5; rx: 10; }
+      .lbl   { font-size: 13px; fill: #111827; }
+      .sub   { font-size: 11px; fill: #6b7280; }
+      .edge  { stroke: #a78bfa; stroke-width: 2; fill: none; }
+      .dash  { stroke: #94a3b8; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+    </style>
+  </defs>
+
+  <rect width="1040" height="700" fill="#fbfaff"/>
+  <text x="32" y="40" class="title">LearnGraph — Multi-Agent AI Learning Platform</text>
+
+  <!-- Frontend lane -->
+  <text x="32" y="78" class="lane">FRONTEND · VERCEL</text>
+  <rect class="box" x="32" y="90" width="200" height="64" rx="10"/>
+  <text x="48" y="118" class="lbl">Next.js (App Router)</text>
+  <text x="48" y="136" class="sub">chat · dashboard · resume · auth</text>
+
+  <!-- Backend lane -->
+  <text x="300" y="78" class="lane">BACKEND · RAILWAY (FastAPI)</text>
+  <rect class="box" x="300" y="90" width="220" height="64" rx="10"/>
+  <text x="316" y="114" class="lbl">API + Security</text>
+  <text x="316" y="132" class="sub">JWT · rate limit · headers</text>
+  <text x="316" y="148" class="sub">SSE streaming</text>
+
+  <!-- Graph container -->
+  <rect x="300" y="178" width="470" height="392" rx="14" fill="#faf5ff" stroke="#a78bfa" stroke-width="2"/>
+  <text x="318" y="202" class="lane">LANGGRAPH STATEGRAPH</text>
+
+  <rect class="box" x="330" y="218" width="160" height="42"/>
+  <text x="346" y="244" class="lbl">load_memory</text>
+
+  <rect class="box" x="330" y="278" width="160" height="42"/>
+  <text x="346" y="304" class="lbl">planner</text>
+
+  <rect class="accent" x="330" y="338" width="160" height="42"/>
+  <text x="346" y="364" class="lbl">supervisor (router)</text>
+
+  <rect class="accent" x="330" y="398" width="200" height="56"/>
+  <text x="346" y="422" class="lbl">specialist agent</text>
+  <text x="346" y="440" class="sub">tutor·quiz·roadmap·resume·interview</text>
+
+  <rect class="box" x="566" y="398" width="174" height="56"/>
+  <text x="582" y="422" class="lbl">ToolNode</text>
+  <text x="582" y="440" class="sub">ReAct loop ↺</text>
+
+  <rect class="accent" x="330" y="472" width="200" height="42"/>
+  <text x="346" y="498" class="lbl">human_approval (interrupt)</text>
+
+  <rect class="box" x="330" y="528" width="160" height="34"/>
+  <text x="346" y="550" class="lbl">memory_update → respond</text>
+
+  <!-- Tools box -->
+  <text x="800" y="202" class="lane">TOOLS (10)</text>
+  <rect class="box" x="800" y="214" width="210" height="120"/>
+  <text x="814" y="236" class="sub">web_search · youtube</text>
+  <text x="814" y="254" class="sub">roadmap · quiz · notes</text>
+  <text x="814" y="272" class="sub">resume_review · interview</text>
+  <text x="814" y="290" class="sub">dsa_mentor · resources</text>
+  <text x="814" y="308" class="sub">progress_analytics</text>
+
+  <!-- Data lane -->
+  <text x="800" y="380" class="lane">DATA · SUPABASE</text>
+  <rect class="data" x="800" y="392" width="210" height="120"/>
+  <text x="814" y="416" class="lbl">Postgres + Auth</text>
+  <text x="814" y="436" class="sub">users · RLS</text>
+  <text x="814" y="454" class="sub">learner memory tables</text>
+  <text x="814" y="472" class="sub">LangGraph checkpoints</text>
+  <text x="814" y="490" class="sub">(short-term memory)</text>
+
+  <!-- LangSmith -->
+  <rect class="box" x="800" y="540" width="210" height="44"/>
+  <text x="814" y="567" class="lbl">LangSmith (traces)</text>
+
+  <!-- Edges -->
+  <path class="edge" d="M232,122 H300" marker-end="url(#arrow)"/>
+  <path class="edge" d="M410,260 V278" marker-end="url(#arrow)"/>
+  <path class="edge" d="M410,320 V338" marker-end="url(#arrow)"/>
+  <path class="edge" d="M410,380 V398" marker-end="url(#arrow)"/>
+  <path class="edge" d="M530,426 H566" marker-end="url(#arrow)"/>
+  <path class="edge" d="M566,444 H534" marker-end="url(#arrow)"/>
+  <path class="edge" d="M410,454 V472" marker-end="url(#arrow)"/>
+  <path class="edge" d="M410,514 V528" marker-end="url(#arrow)"/>
+  <path class="edge" d="M410,154 V178" marker-end="url(#arrow)"/>
+
+  <!-- cross-system dashed links -->
+  <path class="dash" d="M740,426 H800" marker-end="url(#arrow)"/>
+  <path class="dash" d="M490,540 C640,540 700,452 800,452" marker-end="url(#arrow)"/>
+  <path class="dash" d="M490,239 C620,239 690,440 800,452" marker-end="url(#arrow)"/>
+  <path class="dash" d="M770,460 C790,520 795,535 800,556"/>
+
+  <text x="744" y="418" class="sub">execute</text>
+  <text x="600" y="610" class="sub">long-term read/write + checkpoints → Supabase</text>
+  <text x="32" y="660" class="sub">Request flow: user → Next.js → FastAPI → LangGraph (plan → route → tools → approve → persist → respond) → streamed back over SSE.</text>
+</svg>
