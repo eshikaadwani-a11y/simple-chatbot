@@ -69,6 +69,9 @@ Full design write-up: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 | [`docs/SCALING.md`](docs/SCALING.md) | Current vs. future architecture; Redis, Celery, Kafka, K8s, vector DBs |
 | [`docs/INTERVIEW_GUIDE.md`](docs/INTERVIEW_GUIDE.md) | Talking track + resume bullets (short/medium/advanced) |
 | [`docs/INTERVIEW_QUESTIONS.md`](docs/INTERVIEW_QUESTIONS.md) | 50 Q&A across LangGraph, FastAPI, agents, system design, DBs, security, deploy, CI/CD |
+| [`docs/FINAL_AUDIT.md`](docs/FINAL_AUDIT.md) | Honest production-readiness audit with per-section 1–10 scores |
+| [`docs/DEPLOYMENT_AUDIT.md`](docs/DEPLOYMENT_AUDIT.md) | Deploy-tomorrow checklist: env vars, Railway, Vercel, Supabase, build, deps, CI |
+| [`docs/RECRUITER_ASSESSMENT.md`](docs/RECRUITER_ASSESSMENT.md) | Recruiter-facing strengths/weaknesses + internship scores |
 
 ---
 
