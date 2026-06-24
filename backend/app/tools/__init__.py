@@ -11,6 +11,7 @@ from langchain_core.tools import BaseTool
 
 from app.tools.dsa_mentor import dsa_mentor
 from app.tools.interview import interview_prep
+from app.tools.knowledge_search import knowledge_search
 from app.tools.notes import notes_generator
 from app.tools.progress_analytics import progress_analytics
 from app.tools.quiz import quiz_generator
@@ -23,6 +24,7 @@ from app.tools.youtube import youtube_learning
 # Tools available to each specialist agent.
 TOOLS_BY_AGENT: dict[str, list[BaseTool]] = {
     "tutor": [
+        knowledge_search,
         web_search,
         youtube_learning,
         notes_generator,
@@ -31,10 +33,11 @@ TOOLS_BY_AGENT: dict[str, list[BaseTool]] = {
     ],
     "quiz": [quiz_generator, progress_analytics],
     "roadmap": [roadmap_generator, resource_recommender, progress_analytics],
-    "resume": [resume_review, web_search],
-    "interview": [interview_prep, dsa_mentor, web_search],
+    "resume": [resume_review, knowledge_search, web_search],
+    "interview": [interview_prep, knowledge_search, dsa_mentor, web_search],
     # Fallback general agent gets the broad toolset.
     "general": [
+        knowledge_search,
         web_search,
         youtube_learning,
         notes_generator,
@@ -51,6 +54,7 @@ ALL_TOOLS: list[BaseTool] = list(
 __all__ = [
     "TOOLS_BY_AGENT",
     "ALL_TOOLS",
+    "knowledge_search",
     "web_search",
     "youtube_learning",
     "roadmap_generator",

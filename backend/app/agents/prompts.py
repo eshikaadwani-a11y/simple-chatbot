@@ -34,7 +34,9 @@ SPECIALIST_PROMPTS = {
         name="Tutor Agent",
         memory="{memory}",
     )
-    + "\nTeach for understanding. Offer worked examples, then suggest notes, videos, or resources.",
+    + "\nTeach for understanding. For DSA/system-design/interview/resume topics, call "
+    "knowledge_search first and cite the returned sources. Offer worked examples, then "
+    "suggest notes, videos, or resources.",
     "quiz": _BASE_SPECIALIST.format(name="Quiz Agent", memory="{memory}")
     + "\nUse quiz_generator to build quizzes. When grading, identify weak concepts so they can be stored.",
     "roadmap": _BASE_SPECIALIST.format(name="Roadmap Agent", memory="{memory}")
@@ -42,7 +44,8 @@ SPECIALIST_PROMPTS = {
     "resume": _BASE_SPECIALIST.format(name="Resume Agent", memory="{memory}")
     + "\nUse resume_review for ATS analysis. Give specific, honest, quantified rewrite suggestions.",
     "interview": _BASE_SPECIALIST.format(name="Interview Agent", memory="{memory}")
-    + "\nUse interview_prep to run realistic mock interviews with rubrics and follow-ups.",
+    + "\nUse interview_prep to run realistic mock interviews with rubrics and follow-ups. "
+    "Ground technical and system-design answers with knowledge_search and cite the sources.",
     "general": _BASE_SPECIALIST.format(name="Learning Assistant", memory="{memory}"),
 }
 

@@ -144,3 +144,48 @@ create index if not exists idx_usage_events_agent   on public.usage_events (agen
 
 alter table public.usage_events enable row level security;
 -- No SELECT/INSERT policies => only the service-role key (backend) may access it.
+
+
+-- ============================================================
+-- knowledge_documents — RAG vector store (pgvector)
+-- Requires the pgvector extension. Embeddings are 1536-dim
+-- (OpenAI text-embedding-3-small). Populate via: python -m app.rag.ingest
+-- ============================================================
+create extension if not exists vector;
+
+create table if not exists public.knowledge_documents (
+    id         bigint generated always as identity primary key,
+    source     text not null,
+    title      text,
+    chunk      text not null,
+    embedding  vector(1536),
+    created_at timestamptz not null default now()
+);
+
+-- Approximate nearest-neighbour index for cosine distance.
+create index if not exists idx_knowledge_embedding
+    on public.knowledge_documents
+    using ivfflat (embedding vector_cosine_ops) with (lists = 100);
+
+-- RLS on; no public policy => retrieval goes through the backend (service role).
+alter table public.knowledge_documents enable row level security;
+
+-- Similarity search RPC used by the backend retriever.
+create or replace function public.match_knowledge(
+    query_embedding vector(1536),
+    match_count int default 4
+)
+returns table (id bigint, source text, title text, chunk text, score float)
+language sql stable
+as $$
+    select
+        kd.id,
+        kd.source,
+        kd.title,
+        kd.chunk,
+        1 - (kd.embedding <=> query_embedding) as score
+    from public.knowledge_documents kd
+    where kd.embedding is not null
+    order by kd.embedding <=> query_embedding
+    limit match_count;
+$$;

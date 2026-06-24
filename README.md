@@ -20,6 +20,8 @@ LearnGraph is a **production-grade agentic platform** — not a prompt-response 
 | **Short-term memory** | LangGraph Postgres checkpointer — workflows resume without losing state |
 | **Streaming** | Token-by-token Server-Sent Events from FastAPI → Next.js |
 | **Human-in-the-loop** | `interrupt()` checkpoints with Approve/Reject for high-impact actions |
+| **Knowledge-aware (RAG)** | Tutor/Interview agents retrieve from a curated KB (pgvector) and cite sources |
+| **Observability & cost** | LangSmith traces + usage/cost analytics in an admin dashboard |
 | **Observability** | LangSmith tracing through environment config |
 | **Resume analysis** | PDF upload → text extraction → ATS scoring, skill gap, bullet rewrites |
 | **Auth & security** | Supabase JWT, RLS, rate limiting, secure headers, input validation |
@@ -72,6 +74,9 @@ Full design write-up: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 | [`docs/FINAL_AUDIT.md`](docs/FINAL_AUDIT.md) | Honest production-readiness audit with per-section 1–10 scores |
 | [`docs/DEPLOYMENT_AUDIT.md`](docs/DEPLOYMENT_AUDIT.md) | Deploy-tomorrow checklist: env vars, Railway, Vercel, Supabase, build, deps, CI |
 | [`docs/RECRUITER_ASSESSMENT.md`](docs/RECRUITER_ASSESSMENT.md) | Recruiter-facing strengths/weaknesses + internship scores |
+| [`docs/RAG.md`](docs/RAG.md) | Knowledge-aware agent: embeddings, vector store, retriever, grounding |
+| [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) | LangSmith tracing, usage monitoring, cost analytics, admin dashboard |
+| [`docs/DEPLOYMENT_VERIFICATION.md`](docs/DEPLOYMENT_VERIFICATION.md) | Step-by-step deploy runbook with acceptance criteria |
 
 ---
 
@@ -79,11 +84,11 @@ Full design write-up: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 | Agent | Tools it can call |
 |---|---|
-| **Tutor** | web_search, youtube_learning, notes_generator, resource_recommender, dsa_mentor |
+| **Tutor** | knowledge_search (RAG), web_search, youtube_learning, notes_generator, resource_recommender, dsa_mentor |
 | **Quiz** | quiz_generator, progress_analytics |
 | **Roadmap** | roadmap_generator, resource_recommender, progress_analytics |
-| **Resume** | resume_review, web_search |
-| **Interview** | interview_prep, dsa_mentor, web_search |
+| **Resume** | resume_review, knowledge_search (RAG), web_search |
+| **Interview** | interview_prep, knowledge_search (RAG), dsa_mentor, web_search |
 
 All 10 tools degrade gracefully when optional API keys (Tavily, YouTube) are absent.
 

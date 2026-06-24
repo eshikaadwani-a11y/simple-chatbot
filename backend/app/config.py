@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     deepseek_api_key: str | None = None
     # Name of a model entry defined in app/agents/models.yaml
     learngraph_default_model: str = Field(default="gpt-5")
+    # Embedding model for RAG (knowledge retrieval).
+    embedding_model: str = Field(default="text-embedding-3-small")
 
     # ---- Supabase / DB ----
     supabase_url: str | None = None
