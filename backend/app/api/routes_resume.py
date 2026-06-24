@@ -62,7 +62,8 @@ async def analyze_resume(
             detail="Could not extract readable text (is this a scanned image PDF?).",
         )
 
-    raw = resume_review.invoke({"resume_text": text, "target_role": target_role})
+    role = (target_role or "Software Engineer").strip()[:120] or "Software Engineer"
+    raw = resume_review.invoke({"resume_text": text, "target_role": role})
     try:
         analysis = json.loads(raw)
     except json.JSONDecodeError:
@@ -71,7 +72,7 @@ async def analyze_resume(
     long_term.award_xp(user.user_id, 15)
 
     return {
-        "target_role": target_role,
+        "target_role": role,
         "characters_extracted": len(text),
         "analysis": analysis,
     }

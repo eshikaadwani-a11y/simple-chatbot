@@ -177,6 +177,14 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
 ```
 
 ## 8. Security
-- JWT validation on every protected endpoint.
+- JWT validation on every protected endpoint; threads namespaced by user id.
 - Supabase Row-Level Security so users only read/write their own rows.
 - Service-role key is backend-only and never shipped to the browser.
+- Per-IP sliding-window rate limiting (tighter budget for LLM/upload endpoints).
+- Secure response headers (HSTS, X-Frame-Options, X-Content-Type-Options, CSP,
+  Referrer-Policy, Permissions-Policy) on both API and frontend.
+- Input validation/sanitization on all request bodies (length caps, allowed
+  value sets, control-character stripping, thread-id charset).
+- Global exception handler returns sanitized errors (no stack traces leak).
+- Startup environment validation fails fast in production if critical config is
+  missing; warns (with dev fallbacks) otherwise.

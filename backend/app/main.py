@@ -12,6 +12,12 @@ from app.agents.models import default_model_name, list_models
 from app.api import routes_auth, routes_chat, routes_progress, routes_resume
 from app.config import get_settings
 from app.observability import configure_observability
+from app.security import (
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+    register_error_handlers,
+    validate_environment,
+)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("learngraph")
@@ -21,6 +27,7 @@ logger = logging.getLogger("learngraph")
 async def lifespan(app: FastAPI):
     settings = get_settings()
     configure_observability()
+    validate_environment(settings)
     logger.info(
         "Starting %s | model=%s | supabase=%s | db=%s",
         settings.app_name,
@@ -52,9 +59,19 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
     )
+
+    # Security middleware (outermost runs first): rate limiting then headers.
+    app.add_middleware(SecurityHeadersMiddleware)
+    app.add_middleware(
+        RateLimitMiddleware,
+        per_minute=settings.rate_limit_per_minute,
+        heavy_per_minute=settings.rate_limit_heavy_per_minute,
+    )
+
+    register_error_handlers(app)
 
     app.include_router(routes_auth.router)
     app.include_router(routes_chat.router)

@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     # ---- CORS ----
     cors_origins: str = "http://localhost:3000"
 
+    # ---- Rate limiting (requests per minute per client IP) ----
+    rate_limit_per_minute: int = 60
+    rate_limit_heavy_per_minute: int = 20
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
