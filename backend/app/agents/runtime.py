@@ -22,12 +22,34 @@ logger = logging.getLogger("learngraph")
 _GRAPH = None
 
 
+async def init_graph():
+    """Compile the graph with an async-capable checkpointer (call once at startup)."""
+    global _GRAPH
+    from app.memory.checkpointer import create_async_checkpointer
+
+    _GRAPH = build_graph(checkpointer=await create_async_checkpointer())
+    logger.info("Multi-agent graph compiled.")
+    return _GRAPH
+
+
+async def shutdown():
+    """Release resources (connection pools) at shutdown."""
+    from app.memory.checkpointer import close_pools
+
+    await close_pools()
+
+
 def get_graph():
-    """Lazily compile and cache the multi-agent graph."""
+    """Return the compiled graph.
+
+    In production the graph is built during startup via ``init_graph`` with an
+    async Postgres checkpointer. This lazy fallback (used by tests / scripts that
+    don't run the FastAPI lifespan) builds with the in-memory saver.
+    """
     global _GRAPH
     if _GRAPH is None:
         _GRAPH = build_graph(checkpointer=create_checkpointer())
-        logger.info("Multi-agent graph compiled.")
+        logger.info("Multi-agent graph compiled (lazy fallback).")
     return _GRAPH
 
 
@@ -78,7 +100,7 @@ async def stream_response(
                     yield {"type": "route", "route": out["route"]}
 
         # Detect a human-in-the-loop interrupt left in the persisted state.
-        for payload in _pending_interrupts(graph, config):
+        for payload in await _pending_interrupts(graph, config):
             yield {"type": "interrupt", "payload": payload}
     except Exception as exc:  # noqa: BLE001
         logger.exception("stream_response failed")
@@ -87,9 +109,13 @@ async def stream_response(
     yield {"type": "done"}
 
 
-def _pending_interrupts(graph, config: dict[str, Any]) -> list[Any]:
-    """Return the payloads of any interrupts the run is currently paused on."""
-    snapshot = graph.get_state(config)
+async def _pending_interrupts(graph, config: dict[str, Any]) -> list[Any]:
+    """Return the payloads of any interrupts the run is currently paused on.
+
+    Uses the async state API (``aget_state``) because the graph runs with an
+    async checkpointer in production.
+    """
+    snapshot = await graph.aget_state(config)
     if not getattr(snapshot, "next", None):
         return []
     payloads: list[Any] = []
@@ -110,7 +136,7 @@ async def resume_after_approval(
 
     # Guard: only resume if the run is actually paused on an interrupt for this
     # thread. Resuming an un-paused thread would raise / corrupt state.
-    if not _pending_interrupts(graph, config):
+    if not await _pending_interrupts(graph, config):
         yield {"type": "error", "content": "No pending approval for this conversation."}
         yield {"type": "done"}
         return

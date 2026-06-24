@@ -57,6 +57,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.per_minute = per_minute
         self.heavy_per_minute = heavy_per_minute
         self._hits: dict[str, deque[float]] = defaultdict(deque)
+        self._since_sweep = 0
 
     def _client_ip(self, request: Request) -> str:
         # Respect the first hop of X-Forwarded-For when behind a proxy/LB.
@@ -64,6 +65,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if fwd:
             return fwd.split(",")[0].strip()
         return request.client.host if request.client else "unknown"
+
+    def _sweep(self, cutoff: float) -> None:
+        """Evict keys whose window is fully expired (prevents unbounded growth)."""
+        stale = [k for k, w in self._hits.items() if not w or w[-1] < cutoff]
+        for k in stale:
+            del self._hits[k]
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
@@ -76,8 +83,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         key = f"{self._client_ip(request)}:{bucket}"
 
         now = time.monotonic()
-        window = self._hits[key]
         cutoff = now - 60.0
+
+        # Periodic sweep so single-hit clients don't leak memory forever.
+        self._since_sweep += 1
+        if self._since_sweep >= 1000:
+            self._since_sweep = 0
+            self._sweep(cutoff)
+
+        window = self._hits[key]
         while window and window[0] < cutoff:
             window.popleft()
 

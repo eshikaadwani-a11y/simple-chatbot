@@ -19,6 +19,14 @@ def _sse(event: dict) -> dict:
     return {"event": event.get("type", "message"), "data": json.dumps(event)}
 
 
+# Disable proxy/CDN buffering so tokens flush immediately (Railway/Nginx/Vercel).
+_SSE_HEADERS = {
+    "Cache-Control": "no-cache",
+    "X-Accel-Buffering": "no",
+    "Connection": "keep-alive",
+}
+
+
 @router.post("/stream")
 async def chat_stream(body: ChatRequest, user: CurrentUser = Depends(get_current_user)):
     """Stream the agent's response as Server-Sent Events.
@@ -32,7 +40,7 @@ async def chat_stream(body: ChatRequest, user: CurrentUser = Depends(get_current
         ):
             yield _sse(event)
 
-    return EventSourceResponse(event_generator())
+    return EventSourceResponse(event_generator(), headers=_SSE_HEADERS)
 
 
 @router.post("/resume")
@@ -45,4 +53,4 @@ async def chat_resume(body: ResumeRequest, user: CurrentUser = Depends(get_curre
         ):
             yield _sse(event)
 
-    return EventSourceResponse(event_generator())
+    return EventSourceResponse(event_generator(), headers=_SSE_HEADERS)

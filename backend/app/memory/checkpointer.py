@@ -21,6 +21,7 @@ from app.config import get_settings
 logger = logging.getLogger("learngraph")
 
 _POOL = None
+_ASYNC_POOL = None
 
 
 def _get_pool():
@@ -34,9 +35,63 @@ def _get_pool():
     _POOL = ConnectionPool(
         conninfo=settings.database_url,
         max_size=10,
+        open=True,
         kwargs={"autocommit": True, "prepare_threshold": 0},
     )
     return _POOL
+
+
+async def create_async_checkpointer() -> object:
+    """Return an async-capable checkpointer for the app lifetime.
+
+    The graph is executed via ``astream_events`` (async), so it requires an
+    **async** checkpointer. A synchronous ``PostgresSaver`` does NOT implement the
+    async checkpoint methods and raises at runtime under async execution — hence
+    we use ``AsyncPostgresSaver`` backed by an ``AsyncConnectionPool`` here.
+
+    Falls back to an in-memory saver when no database is configured (dev/tests)
+    or if Postgres setup fails (so the service still boots; HITL resume just
+    won't survive a restart).
+    """
+    settings = get_settings()
+    if not settings.has_database:
+        from langgraph.checkpoint.memory import MemorySaver
+
+        logger.warning("DATABASE_URL not set; using in-memory checkpointer (non-durable).")
+        return MemorySaver()
+
+    try:
+        from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+        from psycopg_pool import AsyncConnectionPool
+
+        global _ASYNC_POOL
+        _ASYNC_POOL = AsyncConnectionPool(
+            conninfo=settings.database_url,
+            max_size=10,
+            open=False,
+            kwargs={"autocommit": True, "prepare_threshold": 0},
+        )
+        await _ASYNC_POOL.open()
+        checkpointer = AsyncPostgresSaver(_ASYNC_POOL)
+        await checkpointer.setup()  # idempotent: creates checkpoint tables if missing
+        logger.info("Async Postgres checkpointer ready.")
+        return checkpointer
+    except Exception as exc:  # noqa: BLE001
+        from langgraph.checkpoint.memory import MemorySaver
+
+        logger.error("Postgres checkpointer init failed (%s); falling back to in-memory.", exc)
+        return MemorySaver()
+
+
+async def close_pools() -> None:
+    """Close any open connection pools at shutdown."""
+    global _ASYNC_POOL, _POOL
+    if _ASYNC_POOL is not None:
+        await _ASYNC_POOL.close()
+        _ASYNC_POOL = None
+    if _POOL is not None:
+        _POOL.close()
+        _POOL = None
 
 
 def create_checkpointer() -> object:

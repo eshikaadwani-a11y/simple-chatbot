@@ -35,14 +35,20 @@ async def lifespan(app: FastAPI):
         settings.has_supabase,
         settings.has_database,
     )
-    # Warm up the compiled graph so the first request isn't slow.
+    # Compile the agent graph with an async-capable checkpointer.
     try:
-        from app.agents.runtime import get_graph
+        from app.agents.runtime import init_graph
 
-        get_graph()
+        await init_graph()
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Graph warm-up deferred: %s", exc)
+        logger.warning("Graph init deferred: %s", exc)
     yield
+    try:
+        from app.agents.runtime import shutdown
+
+        await shutdown()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Shutdown cleanup error: %s", exc)
     logger.info("Shutting down %s", settings.app_name)
 
 

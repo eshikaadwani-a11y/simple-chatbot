@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends
+from fastapi.concurrency import run_in_threadpool
 
 from app.api.deps import CurrentUser, get_current_user
 from app.api.schemas import AnalyticsResponse, ProgressEvent
@@ -14,14 +15,13 @@ router = APIRouter(prefix="/progress", tags=["progress"])
 @router.get("/summary", response_model=AnalyticsResponse)
 async def summary(user: CurrentUser = Depends(get_current_user)) -> AnalyticsResponse:
     """Dashboard data: XP, streak, mastery, weak areas, goals."""
-    stats = long_term.compute_analytics(user_id=user.user_id, focus="overview")
+    # Supabase client calls are synchronous/blocking; run them off the event loop.
+    stats = await run_in_threadpool(long_term.compute_analytics, user.user_id, "overview")
     return AnalyticsResponse(**stats)
 
 
-@router.post("/event")
-async def record_event(body: ProgressEvent, user: CurrentUser = Depends(get_current_user)) -> dict:
-    """Record a learning event (topic completion, quiz result, goal, preference)."""
-    uid = user.user_id
+def _apply_event(uid: str, body: ProgressEvent) -> dict:
+    """Synchronous event application (runs in a worker thread)."""
     if body.type == "topic_completed" and body.topic:
         long_term.complete_topic(uid, body.topic, body.mastery or 1.0)
     elif body.type == "quiz_result" and body.topic:
@@ -34,5 +34,10 @@ async def record_event(body: ProgressEvent, user: CurrentUser = Depends(get_curr
         long_term.set_preferences(uid, body.preferences)
     else:
         return {"ok": False, "reason": "unrecognized or incomplete event"}
-
     return {"ok": True, "profile": long_term.get_learner_profile(uid)}
+
+
+@router.post("/event")
+async def record_event(body: ProgressEvent, user: CurrentUser = Depends(get_current_user)) -> dict:
+    """Record a learning event (topic completion, quiz result, goal, preference)."""
+    return await run_in_threadpool(_apply_event, user.user_id, body)

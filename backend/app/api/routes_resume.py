@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 
 from app.api.deps import CurrentUser, get_current_user
 from app.memory import long_term
@@ -50,7 +51,7 @@ async def analyze_resume(
         )
 
     try:
-        text = extract_text_from_pdf(data)
+        text = await run_in_threadpool(extract_text_from_pdf, data)
     except PdfExtractionError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
@@ -63,13 +64,14 @@ async def analyze_resume(
         )
 
     role = (target_role or "Software Engineer").strip()[:120] or "Software Engineer"
-    raw = resume_review.invoke({"resume_text": text, "target_role": role})
+    # resume_review calls the LLM (blocking); keep it off the event loop.
+    raw = await run_in_threadpool(resume_review.invoke, {"resume_text": text, "target_role": role})
     try:
         analysis = json.loads(raw)
     except json.JSONDecodeError:
         analysis = {"raw": raw}
 
-    long_term.award_xp(user.user_id, 15)
+    await run_in_threadpool(long_term.award_xp, user.user_id, 15)
 
     return {
         "target_role": role,
