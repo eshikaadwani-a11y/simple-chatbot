@@ -17,3 +17,17 @@ export interface Analytics {
   weak_areas: string[];
   goals: string[];
 }
+
+export interface ResumeAnalysis {
+  target_role: string;
+  characters_extracted: number;
+  analysis: {
+    ats_score?: number;
+    strengths?: string[];
+    weaknesses?: string[];
+    missing_keywords?: string[];
+    bullet_rewrites?: { before: string; after: string }[];
+    summary?: string;
+    raw?: string;
+  };
+}

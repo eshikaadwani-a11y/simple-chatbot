@@ -2,9 +2,9 @@
 
 import { supabase } from "./supabase";
 import { parseSSEBuffer } from "./sse";
-import type { AgentEvent, Analytics } from "./types";
+import type { AgentEvent, Analytics, ResumeAnalysis } from "./types";
 
-export type { AgentEvent, Analytics } from "./types";
+export type { AgentEvent, Analytics, ResumeAnalysis } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
@@ -82,4 +82,25 @@ export async function recordEvent(event: Record<string, unknown>): Promise<void>
     headers: { "Content-Type": "application/json", ...(await authHeader()) },
     body: JSON.stringify(event),
   });
+}
+
+/** Upload a PDF resume for ATS analysis by the Resume agent. */
+export async function analyzeResume(file: File, targetRole: string): Promise<ResumeAnalysis> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("target_role", targetRole);
+
+  // Note: do NOT set Content-Type manually; the browser adds the multipart
+  // boundary. We only attach the auth header.
+  const res = await fetch(`${API_BASE}/resume/analyze`, {
+    method: "POST",
+    headers: { ...(await authHeader()) },
+    body: form,
+  });
+
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail || `Analysis failed (${res.status})`);
+  }
+  return res.json();
 }

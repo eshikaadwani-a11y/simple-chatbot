@@ -14,6 +14,7 @@ export function NavBar() {
       <nav className="flex items-center gap-4 text-sm">
         <Link href="/dashboard" className="hover:text-brand-light">Dashboard</Link>
         <Link href="/chat" className="hover:text-brand-light">AI Mentor</Link>
+        <Link href="/resume" className="hover:text-brand-light">Resume</Link>
         <span className="hidden text-gray-500 sm:inline">{user?.email}</span>
         <button
           className="btn-ghost"
