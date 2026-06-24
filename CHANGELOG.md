@@ -27,3 +27,8 @@ All notable changes are grouped by development milestone.
 15. LangSmith observability
 16. Deployment (Railway + Vercel + Supabase)
 17. Polish release
+18. CI/CD pipeline (GitHub Actions: lint, type-check, tests, build)
+19. Testing infrastructure (pytest + vitest; 70% coverage gate)
+20. Resume upload system (PDF → ATS analysis)
+21. Production security (rate limiting, secure headers, validation, env checks)
+22. Recruiter polish (landing page, README, architecture diagram, states, animations)
