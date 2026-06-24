@@ -77,6 +77,10 @@ Full design write-up: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 | [`docs/RAG.md`](docs/RAG.md) | Knowledge-aware agent: embeddings, vector store, retriever, grounding |
 | [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) | LangSmith tracing, usage monitoring, cost analytics, admin dashboard |
 | [`docs/DEPLOYMENT_VERIFICATION.md`](docs/DEPLOYMENT_VERIFICATION.md) | Step-by-step deploy runbook with acceptance criteria |
+| [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) | 3-minute recruiter demo script |
+| [`docs/RESUME_BULLETS.md`](docs/RESUME_BULLETS.md) | 1-line / 2-line / advanced resume bullets |
+| [`docs/INTERVIEW_STORY.md`](docs/INTERVIEW_STORY.md) | Behavioral narrative: why, challenges, tradeoffs, biggest bug, lessons |
+| [`docs/TEN_OUT_OF_TEN_PLAN.md`](docs/TEN_OUT_OF_TEN_PLAN.md) | Honest path from ~8 to 10/10 |
 
 ---
 
